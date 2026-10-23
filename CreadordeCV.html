@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Currículums Avanzado</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --bg: #f4f7f6;
+            --border: #ccc;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: #333; margin: 0; padding: 20px; box-sizing: border-box; }
+        .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        
+        .lang-selector-box { background: #e8f4fd; border: 1px solid #3498db; padding: 12px 15px; border-radius: 6px; margin-bottom: 25px; display: flex; align-items: center; justify-content: space-between; }
+        .lang-selector-box label { margin: 0; font-size: 15px; color: var(--primary); }
+        .lang-selector-box select { width: auto; padding: 6px 12px; font-weight: bold; }
+
+        h1 { color: var(--primary); text-align: center; }
+        h2.section-title { color: var(--primary); border-bottom: 2px solid #ecf0f1; padding-bottom: 5px; margin-top: 30px; }
+        
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #34495e; font-size: 14px; }
+        input[type="text"], input[type="email"], select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 4px; box-sizing: border-box; font-family: inherit; font-size: 15px; }
+        textarea { resize: vertical; height: 100px; }
+        
+        button { border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; font-size: 15px; font-weight: bold; transition: all 0.2s; }
+        .btn-primary { background-color: var(--secondary); color: #fff; width: 100%; padding: 15px; font-size: 18px; margin-top: 20px; }
+        .btn-primary:hover { background-color: #2980b9; }
+        .btn-add { background-color: #ecf0f1; color: var(--primary); margin-top: 10px; display: inline-flex; align-items: center; gap: 5px; }
+        .btn-add:hover { background-color: #bdc3c7; }
+        .btn-remove { background-color: #ffeaea; color: var(--danger); padding: 6px 12px; font-size: 13px; float: right; }
+        .btn-remove:hover { background-color: #ffcccc; }
+        .btn-secondary { background-color: #95a5a6; color: white; }
+        .btn-secondary:hover { background-color: #7f8c8d; }
+        .btn-success { background-color: var(--success); color: white; }
+        .btn-success:hover { background-color: #27ae60; }
+        .btn-export { background-color: #8e44ad; color: white; }
+        .btn-export:hover { background-color: #9b59b6; }
+
+        .dynamic-block { background: #fdfdfd; border: 1px dashed var(--border); padding: 15px; margin-bottom: 15px; border-radius: 6px; position: relative; }
+        
+        .drop-zone { max-width: 100%; height: 150px; padding: 25px; display: flex; align-items: center; justify-content: center; text-align: center; font-weight: 500; font-size: 16px; cursor: pointer; color: #cccccc; border: 2px dashed #3498db; border-radius: 10px; background-color: #f9f9f9; transition: background-color 0.2s, border-color 0.2s; position: relative; overflow: hidden; }
+        .drop-zone:hover, .drop-zone--over { background-color: #e8f4fd; border-color: #2980b9; color: #2980b9; }
+        .drop-zone__input { display: none; }
+        .drop-zone__thumb { width: 100%; height: 100%; border-radius: 10px; overflow: hidden; background-color: #cccccc; background-size: cover; background-position: center; position: absolute; top: 0; left: 0; z-index: 10; display: flex; align-items: flex-end; justify-content: flex-end; padding: 10px; box-sizing: border-box; }
+        .btn-remove-photo { background: rgba(231, 76, 60, 0.9); color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; z-index: 15; }
+        .btn-remove-photo:hover { background: #c0392b; }
+
+        #preview-section { display: none; }
+        .editor-toolbar { position: sticky; top: 0; background: #2c3e50; padding: 10px; border-radius: 6px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; z-index: 100; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .editor-toolbar span { color: white; font-size: 14px; margin-right: 5px; }
+        .toolbar-btn { background: #34495e; color: white; padding: 6px 10px; border-radius: 4px; font-size: 14px; border: 1px solid transparent; }
+        .toolbar-btn:hover:not(:disabled) { background: #465c72; }
+        .toolbar-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        input[type="color"] { border: none; width: 32px; height: 32px; padding: 0; border-radius: 4px; cursor: pointer; background: transparent; }
+        .divider { width: 1px; height: 20px; background: #7f8c8d; margin: 0 5px; }
+
+        .resume-preview { border: 1px solid var(--border); padding: 50px; background: #fff; color: #000; font-family: 'Helvetica Neue', Arial, sans-serif; box-shadow: 0 0 10px rgba(0,0,0,0.05); min-height: 800px; }
+        
+        .editable { cursor: pointer; transition: background 0.2s; outline: none; border: 1px solid transparent; display: block; }
+        .editable:hover { background-color: #f0f8ff; border: 1px dashed #3498db; }
+        .editable.selected { background-color: #e8f4fd; border: 1px solid #3498db; box-shadow: 0 0 5px rgba(52, 152, 219, 0.3); }
+
+        .block-editable { position: relative; border: 1px solid transparent; transition: all 0.2s; margin-bottom: 10px; }
+        .block-editable:hover { border: 1px dashed #e67e22; }
+        .block-editable.selected-block { border: 2px solid #e67e22; box-shadow: 0 0 8px rgba(230, 126, 34, 0.3); }
+        .block-editable.dragging { opacity: 0.4; border: 2px dashed #999; }
+        .drag-over { border-top: 3px solid #3498db !important; }
+        
+        .block-controls { position: absolute; top: -15px; right: 10px; display: none; background: #e67e22; border-radius: 4px; padding: 2px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 50; }
+        .block-editable:hover .block-controls, .block-editable.selected-block .block-controls { display: flex; }
+        .block-controls button { background: none; border: none; color: white; padding: 5px 8px; cursor: pointer; font-size: 12px; font-weight: normal; margin: 0; }
+        .block-controls button:hover { background: rgba(255,255,255,0.2); }
+
+        .actions-footer { display: flex; justify-content: center; gap: 15px; margin-top: 30px; flex-wrap: wrap; }
+        .data-controls { display: flex; justify-content: center; gap: 15px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; flex-wrap: wrap; }
+
+        /* Estils del Peu de Pàgina */
+        footer { text-align: center; margin-top: 30px; padding: 20px 10px 0 10px; color: #7f8c8d; font-size: 13px; border-top: 1px solid #eaeaea; }
+        footer p { margin: 0 0 8px 0; }
+        .footer-cc { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .footer-cc img { height: 24px; vertical-align: middle; }
+
+        @media print {
+            body { background: white; margin: 0; padding: 0; }
+            .container { box-shadow: none; margin: 0; padding: 0; max-width: 100%; }
+            #form-section, .editor-toolbar, .actions-footer, .data-controls, .lang-selector-box, #txt-edit-title, .instruction-text, footer { display: none !important; }
+            #preview-section { display: block !important; padding: 0 !important; }
+            .resume-preview { border: none; box-shadow: none; padding: 0; min-height: auto; }
+            .non-exportable { display: none !important; }
+            .block-editable { border: none !important; margin-bottom: 10px !important; }
+            .editable { border: none !important; background: transparent !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="form-section">
+    <div class="lang-selector-box">
+        <label for="app-lang" id="lbl-app-lang">Idioma del Formulario / Idioma del CV:</label>
+        <select id="app-lang" onchange="changeLanguage(this.value); autoSave();">
+            <option value="es" selected>Español</option>
+            <option value="ca">Català</option>
+        </select>
+    </div>
+
+    <h1 id="txt-title">Creador de Currículum</h1>
+    <p id="txt-subtitle" style="text-align: center; color: #7f8c8d; margin-bottom: 30px;">Rellena los datos. Luego podrás diseñar los colores, tamaños y alineación a tu gusto antes de descargarlo.</p>
+    
+    <form id="cv-form">
+        <h2 class="section-title" id="sec-1">1. Datos Personales y Foto</h2>
+        <div class="form-group">
+            <label id="lbl-photo">Fotografía (Opcional):</label>
+            <div id="drop-zone" class="drop-zone">
+                <span class="drop-zone__prompt" id="txt-drop-prompt">Arrastra tu foto aquí o haz clic para seleccionarla</span>
+                <input type="file" id="photo-upload" class="drop-zone__input" accept="image/*">
+            </div>
+        </div>
+        <div class="form-group"><label id="lbl-fullname">Nombre Completo:</label><input type="text" id="f_name" required></div>
+        <div style="display: flex; gap: 15px;">
+            <div class="form-group" style="flex: 1;"><label id="lbl-email">Correo Electrónico:</label><input type="email" id="f_email"></div>
+            <div class="form-group" style="flex: 1;"><label id="lbl-phone">Teléfono:</label><input type="text" id="f_phone"></div>
+        </div>
+        <div class="form-group"><label id="lbl-location">Ciudad, País / Enlace (LinkedIn, Portfolio):</label><input type="text" id="f_location"></div>
+
+        <h2 class="section-title" id="sec-2">2. Perfil Profesional</h2>
+        <div class="form-group">
+            <label id="lbl-summary">Breve resumen sobre ti y tus objetivos:</label>
+            <textarea id="f_summary"></textarea>
+        </div>
+
+        <h2 class="section-title" id="sec-3">3. Experiencia Laboral</h2>
+        <div id="experience-container"></div>
+        <button type="button" class="btn-add" id="btn-add-exp" onclick="addExperience()">+ Añadir otra experiencia</button>
+
+        <h2 class="section-title" id="sec-4">4. Formación Académica</h2>
+        <div id="education-container"></div>
+        <button type="button" class="btn-add" id="btn-add-edu" onclick="addEducation()">+ Añadir otra formación</button>
+
+        <h2 class="section-title" id="sec-comp">5. Formación Complementaria</h2>
+        <div id="complementary-container"></div>
+        <button type="button" class="btn-add" id="btn-add-comp" onclick="addComplementary()">+ Añadir otro curso</button>
+
+        <h2 class="section-title" id="sec-5">6. Habilidades y Competencias</h2>
+        <div class="form-group"><label id="lbl-skills-personal">Competencias Personales e Interpersonales (separadas por comas):</label><input type="text" id="f_skills_personal"></div>
+        <div class="form-group"><label id="lbl-skills-technical">Competencias Técnicas y Digitales (separadas por comas):</label><input type="text" id="f_skills_technical"></div>
+
+        <h2 class="section-title" id="sec-6">7. Idiomas</h2>
+        <div id="languages-container"></div>
+        <button type="button" class="btn-add" id="btn-add-lang" onclick="addLanguage()">+ Añadir otro idioma</button>
+
+        <h2 class="section-title" id="sec-7">8. Otros datos de interés</h2>
+        <div class="form-group">
+            <label id="lbl-other-info">Escribe otros datos de interés (carné de conducir, vehículo propio, disponibilidad de viajar, etc.):</label>
+            <textarea id="f_other_info"></textarea>
+        </div>
+
+        <button type="button" class="btn-primary" id="btn-generate" onclick="generatePreview()">Generar y Diseñar Currículum</button>
+        
+        <div class="data-controls">
+            <button type="button" class="btn-export" onclick="exportJSON()" id="btn-export-json">Exportar Datos (JSON)</button>
+            <div style="position: relative;">
+                <button type="button" class="btn-secondary" onclick="document.getElementById('import-json').click()" id="btn-import-json">Importar Datos (JSON)</button>
+                <input type="file" id="import-json" accept=".json" style="display:none" onchange="importJSON(event)">
+            </div>
+            <button type="button" class="btn-remove" onclick="clearData()" id="btn-clear-data">Borrar todos los datos</button>
+        </div>
+    </form>
+</div>
+
+<div class="container" id="preview-section">
+    <h1 id="txt-edit-title">Edición Visual</h1>
+    <p class="instruction-text" id="txt-edit-subtitle" style="text-align: center; color: #7f8c8d; margin-bottom: 20px;">
+        Haz clic en un texto o fondo de bloque para personalizarlo. <br>
+        <em>Si aplicas fondo de color, asegúrate de exportar como documento (.doc o .odt) para usarlo en Drive o tu ordenador.</em>
+    </p>
+
+    <div class="editor-toolbar">
+        <span id="tb-lbl-text">Texto:</span>
+        <button class="toolbar-btn" id="btn-bold" onclick="toggleBold()" disabled title="Negrita"><b>B</b></button>
+        <button class="toolbar-btn" id="btn-size-up" onclick="changeSize(1)" title="Aumentar tamaño" disabled>A+</button>
+        <button class="toolbar-btn" id="btn-size-down" onclick="changeSize(-1)" title="Disminuir tamaño" disabled>A-</button>
+        <input type="color" id="text-color-picker" onchange="changeTextColor(this.value)" disabled title="Color del texto">
+        
+        <div class="divider"></div>
+        <span id="tb-lbl-align">Alineación:</span>
+        <button class="toolbar-btn text-align-btn" id="btn-align-left" onclick="alignText('left')" disabled title="Alinear a la izquierda">Izq</button>
+        <button class="toolbar-btn text-align-btn" id="btn-align-center" onclick="alignText('center')" disabled title="Centrar">Cen</button>
+        <button class="toolbar-btn text-align-btn" id="btn-align-right" onclick="alignText('right')" disabled title="Alinear a la derecha">Der</button>
+        
+        <div class="divider"></div>
+        <span id="tb-lbl-bg">Fondo de Bloque:</span>
+        <input type="color" id="bg-color-picker" onchange="changeBgColor(this.value)" disabled title="Color de fondo del bloque">
+        <button class="toolbar-btn" id="btn-clear-bg" onclick="clearBgColor()" disabled title="Quitar fondo">Quitar</button>
+
+        <span style="margin-left:auto; font-size: 12px; color: #2ecc71; font-weight: bold;" id="selection-status">Selecciona un elemento</span>
+    </div>
+
+    <div id="resume-wrapper">
+        <div class="resume-preview sort-container" id="resume-content"></div>
+    </div>
+    
+    <div class="actions-footer">
+        <button type="button" class="btn-secondary" id="btn-back" onclick="editForm()">Volver al Formulario</button>
+        <button type="button" class="btn-success" id="btn-dl-pdf" onclick="window.print()" style="background-color: #e74c3c;">Imprimir / Guardar PDF</button>
+        <button type="button" class="btn-success" id="btn-dl-doc" onclick="downloadFile('doc')">Descargar en Word (.doc)</button>
+        <button type="button" class="btn-success" id="btn-dl-odt" style="background-color: #f39c12;" onclick="downloadFile('odt')">Descargar en LibreOffice (.odt)</button>
+    </div>
+</div>
+
+<footer>
+    <p>Eina feta pel Dani, l'Adrià i el Guillem amb l'ajuda de IA per als Punts Omnia.</p>
+    <div class="footer-cc">
+        <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ca" target="_blank" rel="noopener noreferrer">
+            <img src="https://mirrors.creativecommons.org/presskit/buttons/88x31/svg/by-nc-sa.svg" alt="Licencia Creative Commons BY-NC-SA">
+        </a>
+    </div>
+</footer>
+
+<script>
+    /* --- DICCIONARIO MULTI-IDIOMA --- */
+    const translations = {
+        es: {
+            appLangLabel: "Idioma del Formulario / Idioma del CV:",
+            title: "Creador de Currículum",
+            subtitle: "Rellena los datos. Luego podrás diseñar los colores, tamaños y alineación a tu gusto antes de descargarlo.",
+            sec1: "1. Datos Personales y Foto",
+            photoLabel: "Fotografía (Opcional):",
+            dropPrompt: "Arrastra tu foto aquí o haz clic para seleccionarla",
+            removePhoto: "Eliminar foto",
+            fullName: "Nombre Completo:",
+            email: "Correo Electrónico:",
+            phone: "Teléfono:",
+            location: "Ciudad, País / Enlace (LinkedIn, Portfolio):",
+            sec2: "2. Perfil Profesional",
+            summaryLabel: "Breve resumen sobre ti y tus objetivos:",
+            sec3: "3. Experiencia Laboral",
+            expRole: "Puesto / Cargo:",
+            expCompany: "Empresa:",
+            expDates: "Fechas:",
+            expDesc: "Descripción y Logros:",
+            btnAddExp: "+ Añadir otra experiencia",
+            sec4: "4. Formación Académica",
+            eduDegree: "Título / Grado:",
+            eduSchool: "Institución:",
+            eduDate: "Año:",
+            btnAddEdu: "+ Añadir otra formación",
+            secComp: "5. Formación Complementaria",
+            compCourse: "Curso:",
+            compSchool: "Institución / Centro:",
+            compDate: "Año:",
+            compHours: "Hores:",
+            btnAddComp: "+ Añadir otro curso",
+            sec5: "6. Habilidades y Competencias",
+            skillsPersonalLabel: "Competencias Personales e Interpersonales (separadas por comas):",
+            skillsTechnicalLabel: "Competencias Técnicas y Digitales (separadas por comas):",
+            sec6: "7. Idiomas",
+            langName: "Idioma:",
+            langLevel: "Nivel:",
+            optBasic: "Básico",
+            optInter: "Intermedio",
+            optAdv: "Avanzado",
+            optNative: "Nativo",
+            certQuestion: "¿Dispone de título acreditativo de idioma?",
+            certSpec: "Especifique el título acreditativo:",
+            btnAddLang: "+ Añadir otro idioma",
+            sec7: "8. Otros datos de interés",
+            otherInfoLabel: "Escribe otros datos de interés (carné de conducir, vehículo propio, disponibilidad de viajar, etc.):",
+            btnGenerate: "Generar y Diseñar Currículum",
+            btnRemove: "Eliminar",
+            btnExport: "Exportar Datos (JSON)",
+            btnImport: "Importar Datos (JSON)",
+            btnClear: "Borrar todos los datos",
+            phName: "Ej: Juan Pérez",
+            phEmail: "ejemplo@correo.com",
+            phPhone: "+34 600 000 000",
+            phLocation: "Ej: Madrid, España | linkedin.com/in/juanperez",
+            phSummary: "Profesional con más de 5 años de experiencia...",
+            phExpTitle: "Ej: Desarrollador Web",
+            phExpCompany: "Ej: Tech Solutions",
+            phExpDate: "2020 - Actualidad",
+            phExpDesc: "Desarrollo de aplicaciones web usando...",
+            phEduTitle: "Ej: Grado en Ingeniería Informática",
+            phEduSchool: "Ej: Universidad Complutense",
+            phEduDate: "2018",
+            phCompCourse: "Ej: Curso avanzado de React",
+            phCompSchool: "Ej: Plataforma Online",
+            phCompDate: "2023",
+            phCompHours: "Ej: 40h",
+            phSkillsPersonal: "Ej: Trabajo en equipo, Liderazgo, Comunicación asertiva, Resolución de problemas",
+            phSkillsTechnical: "Ej: Python, Gestión de proyectos, Diseño UI/UX, Excel avanzado",
+            phLangName: "Ej: Español, Inglés...",
+            phLangCert: "Ej: Cambridge C1 Advanced, DELF B2...",
+            phOtherInfo: "Ej: Permiso de conducir B, vehículo propio, disponibilidad inmediata y para viajar.",
+            editTitle: "Edición Visual",
+            editSubtitle: "Haz clic en un texto o fondo de bloque para personalizarlo. <br><em>Si aplicas fondo de color, asegúrate de exportar como documento (.doc o .odt) para usarlo en Drive o tu ordenador.</em>",
+            tbText: "Texto:",
+            tbAlign: "Alineación:",
+            alignLeft: "Izq",
+            alignCenter: "Cen",
+            alignRight: "Der",
+            tbBg: "Fondo de Bloque:",
+            tbClear: "Quitar",
+            statusSelect: "Selecciona un elemento",
+            statusTextSelected: "Texto seleccionado",
+            statusBlockSelected: "Fondo del bloque seleccionado",
+            btnBack: "Volver al Formulario",
+            btnDlPdf: "Imprimir / Guardar PDF",
+            btnDlDoc: "Descargar en Word (.doc)",
+            btnDlOdt: "Descargar en LibreOffice (.odt)",
+            cvProfile: "Perfil Profesional",
+            cvExp: "Experiencia Laboral",
+            cvEdu: "Formación Académica",
+            cvComp: "Formación Complementaria",
+            cvSkills: "Habilidades y Competencias",
+            cvPersonalSkills: "Competencias Personales e Interpersonales",
+            cvTechnicalSkills: "Competencias Técnicas y Digitales",
+            cvLang: "Idiomas",
+            cvOther: "Otros datos de interés"
+        },
+        ca: {
+            appLangLabel: "Idioma del Formulari / Idioma del CV:",
+            title: "Creador de Currículums",
+            subtitle: "Omple les dades. Després podràs dissenyar els colors, mides i alineació al teu gust abans de descarregar-lo.",
+            sec1: "1. Dades Personals i Fotografia",
+            photoLabel: "Fotografia (Opcional):",
+            dropPrompt: "Arrossega la teva foto aquí o fes clic per seleccionar-la",
+            removePhoto: "Eliminar foto",
+            fullName: "Nom Complet:",
+            email: "Correu Electrònic:",
+            phone: "Telèfon:",
+            location: "Ciutat, País / Enllaç (LinkedIn, Portfolio):",
+            sec2: "2. Perfil Professional",
+            summaryLabel: "Breu resum sobre tu i els teus objectius:",
+            sec3: "3. Experiència Laboral",
+            expRole: "Lloc de treball / Càrrec:",
+            expCompany: "Empresa:",
+            expDates: "Dates:",
+            expDesc: "Descripció i Assoliments:",
+            btnAddExp: "+ Afegir una altra experiència",
+            sec4: "4. Formació Acadèmica",
+            eduDegree: "Títol / Grau:",
+            eduSchool: "Institució:",
+            eduDate: "Any:",
+            btnAddEdu: "+ Afegir una altra formació",
+            secComp: "5. Formació Complementària",
+            compCourse: "Curs:",
+            compSchool: "Institució / Centre:",
+            compDate: "Any:",
+            compHours: "Hores:",
+            btnAddComp: "+ Afegir un altre curs",
+            sec5: "6. Habilitats i Competències",
+            skillsPersonalLabel: "Competències Personals i Interpersonals (separades per comes):",
+            skillsTechnicalLabel: "Competències Tècniques i Digitals (separades per comes):",
+            sec6: "7. Idiomes",
+            langName: "Idioma:",
+            langLevel: "Nivell:",
+            optBasic: "Bàsic",
+            optInter: "Intermedi",
+            optAdv: "Avançat",
+            optNative: "Natiu",
+            certQuestion: "Disposa de títol acreditatiu d'idioma?",
+            certSpec: "Especifiqui el títol acreditatiu:",
+            btnAddLang: "+ Afegir un altre idioma",
+            sec7: "8. Altres dades d'interès",
+            otherInfoLabel: "Escriu altres dades d'interès (carnet de conduir, vehicle propi, disponibilitat per viatjar, etc.):",
+            btnGenerate: "Generar i Dissenyar Currículum",
+            btnRemove: "Eliminar",
+            btnExport: "Exportar Dades (JSON)",
+            btnImport: "Importar Dades (JSON)",
+            btnClear: "Esborrar totes les dades",
+            phName: "Ex: Joan Garcia",
+            phEmail: "exemple@correu.com",
+            phPhone: "+34 600 000 000",
+            phLocation: "Ex: Barcelona, Catalunya | linkedin.com/in/joangarcia",
+            phSummary: "Professional amb més de 5 anys d'experiència...",
+            phExpTitle: "Ex: Desenvolupador Web",
+            phExpCompany: "Ex: Tech Solutions",
+            phExpDate: "2020 - Actualitat",
+            phExpDesc: "Desenvolupament d'aplicacions web utilitzant...",
+            phEduTitle: "Ex: Grau en Enginyeria Informàtica",
+            phEduSchool: "Ex: Universitat de Barcelona",
+            phEduDate: "2018",
+            phCompCourse: "Ex: Curs avançat de React",
+            phCompSchool: "Ex: Plataforma Online",
+            phCompDate: "2023",
+            phCompHours: "Ex: 40h",
+            phSkillsPersonal: "Ex: Treball en equip, Lideratge, Comunicació assertiva, Resolució de problemes",
+            phSkillsTechnical: "Ex: Python, Gestió de projectes, Disseny UI/UX, Excel avançat",
+            phLangName: "Ex: Català, Anglès...",
+            phLangCert: "Ex: Cambridge C1 Advanced, DELF B2...",
+            phOtherInfo: "Ex: Permís de conduir B, vehicle propi, disponibilitat immediata i per viatjar.",
+            editTitle: "Edició Visual",
+            editSubtitle: "Fes clic en un text o fons de bloc per personalitzar-lo. <br><em>Si apliques fons de color, assegura't d'exportar com a document (.doc o .odt) per utilitzar-lo a Drive o al teu ordinador.</em>",
+            tbText: "Text:",
+            tbAlign: "Alineació:",
+            alignLeft: "Esq",
+            alignCenter: "Cen",
+            alignRight: "Dre",
+            tbBg: "Fons de Bloc:",
+            tbClear: "Treure",
+            statusSelect: "Selecciona un element",
+            statusTextSelected: "Text seleccionat",
+            statusBlockSelected: "Fons del bloc seleccionat",
+            btnBack: "Tornar al Formulari",
+            btnDlPdf: "Imprimir / Guardar PDF",
+            btnDlDoc: "Descarregar en Word (.doc)",
+            btnDlOdt: "Descarregar en LibreOffice (.odt)",
+            cvProfile: "Perfil Professional",
+            cvExp: "Experiència Laboral",
+            cvEdu: "Formació Académica",
+            cvComp: "Formació Complementària",
+            cvSkills: "Habilitats i Competències",
+            cvPersonalSkills: "Competències Personals i Interpersonals",
+            cvTechnicalSkills: "Competències Tècniques i Digitals",
+            cvLang: "Idiomes",
+            cvOther: "Altres dades d'interès"
+        }
+    };
+
+    let currentLang = 'es';
+    let photoBase64 = "";
+
+    // --- I18N ---
+    function changeLanguage(lang) {
+        currentLang = lang;
+        const t = translations[lang];
+
+        document.getElementById('lbl-app-lang').innerText = t.appLangLabel;
+        document.getElementById('txt-title').innerText = t.title;
+        document.getElementById('txt-subtitle').innerText = t.subtitle;
+        document.getElementById('sec-1').innerText = t.sec1;
+        document.getElementById('lbl-photo').innerText = t.photoLabel;
+        
+        if (!photoBase64) {
+            document.getElementById('txt-drop-prompt').innerText = t.dropPrompt;
+        } else {
+            const btnRemovePhoto = document.getElementById('btn-remove-photo-text');
+            if (btnRemovePhoto) btnRemovePhoto.innerText = t.removePhoto;
+        }
+
+        document.getElementById('lbl-fullname').innerText = t.fullName;
+        document.getElementById('lbl-email').innerText = t.email;
+        document.getElementById('lbl-phone').innerText = t.phone;
+        document.getElementById('lbl-location').innerText = t.location;
+        
+        document.getElementById('f_name').placeholder = t.phName;
+        document.getElementById('f_email').placeholder = t.phEmail;
+        document.getElementById('f_phone').placeholder = t.phPhone;
+        document.getElementById('f_location').placeholder = t.phLocation;
+
+        document.getElementById('sec-2').innerText = t.sec2;
+        document.getElementById('lbl-summary').innerText = t.summaryLabel;
+        document.getElementById('f_summary').placeholder = t.phSummary;
+        
+        document.getElementById('sec-3').innerText = t.sec3;
+        document.querySelectorAll('.lbl-exp-role').forEach(el => el.innerText = t.expRole);
+        document.querySelectorAll('.lbl-exp-company').forEach(el => el.innerText = t.expCompany);
+        document.querySelectorAll('.lbl-exp-dates').forEach(el => el.innerText = t.expDates);
+        document.querySelectorAll('.lbl-exp-desc').forEach(el => el.innerText = t.expDesc);
+        document.querySelectorAll('.exp-title').forEach(el => el.placeholder = t.phExpTitle);
+        document.querySelectorAll('.exp-company').forEach(el => el.placeholder = t.phExpCompany);
+        document.querySelectorAll('.exp-date').forEach(el => el.placeholder = t.phExpDate);
+        document.querySelectorAll('.exp-desc').forEach(el => el.placeholder = t.phExpDesc);
+        document.getElementById('btn-add-exp').innerText = t.btnAddExp;
+
+        document.getElementById('sec-4').innerText = t.sec4;
+        document.querySelectorAll('.lbl-edu-degree').forEach(el => el.innerText = t.eduDegree);
+        document.querySelectorAll('.lbl-edu-school').forEach(el => el.innerText = t.eduSchool);
+        document.querySelectorAll('.lbl-edu-date').forEach(el => el.innerText = t.eduDate);
+        document.querySelectorAll('.edu-title').forEach(el => el.placeholder = t.phEduTitle);
+        document.querySelectorAll('.edu-school').forEach(el => el.placeholder = t.phEduSchool);
+        document.querySelectorAll('.edu-date').forEach(el => el.placeholder = t.phEduDate);
+        document.getElementById('btn-add-edu').innerText = t.btnAddEdu;
+
+        document.getElementById('sec-comp').innerText = t.secComp;
+        document.querySelectorAll('.lbl-comp-course').forEach(el => el.innerText = t.compCourse);
+        document.querySelectorAll('.lbl-comp-school').forEach(el => el.innerText = t.compSchool);
+        document.querySelectorAll('.lbl-comp-date').forEach(el => el.innerText = t.compDate);
+        document.querySelectorAll('.lbl-comp-hours').forEach(el => el.innerText = t.compHours);
+        document.querySelectorAll('.comp-title').forEach(el => el.placeholder = t.phCompCourse);
+        document.querySelectorAll('.comp-school').forEach(el => el.placeholder = t.phCompSchool);
+        document.querySelectorAll('.comp-date').forEach(el => el.placeholder = t.phCompDate);
+        document.querySelectorAll('.comp-hours').forEach(el => el.placeholder = t.phCompHours);
+        document.getElementById('btn-add-comp').innerText = t.btnAddComp;
+
+        document.getElementById('sec-5').innerText = t.sec5;
+        document.getElementById('lbl-skills-personal').innerText = t.skillsPersonalLabel;
+        document.getElementById('lbl-skills-technical').innerText = t.skillsTechnicalLabel;
+        document.getElementById('f_skills_personal').placeholder = t.phSkillsPersonal;
+        document.getElementById('f_skills_technical').placeholder = t.phSkillsTechnical;
+
+        document.getElementById('sec-6').innerText = t.sec6;
+        document.querySelectorAll('.lbl-lang-name').forEach(el => el.innerText = t.langName);
+        document.querySelectorAll('.lbl-lang-level').forEach(el => el.innerText = t.langLevel);
+        document.querySelectorAll('.opt-basic').forEach(el => el.innerText = t.optBasic);
+        document.querySelectorAll('.opt-inter').forEach(el => el.innerText = t.optInter);
+        document.querySelectorAll('.opt-adv').forEach(el => el.innerText = t.optAdv);
+        document.querySelectorAll('.opt-native').forEach(el => el.innerText = t.optNative);
+        document.querySelectorAll('.txt-cert-question').forEach(el => el.innerText = t.certQuestion);
+        document.querySelectorAll('.lbl-cert-spec').forEach(el => el.innerText = t.certSpec);
+        document.querySelectorAll('.lang-name').forEach(el => el.placeholder = t.phLangName);
+        document.querySelectorAll('.lang-cert').forEach(el => el.placeholder = t.phLangCert);
+        document.getElementById('btn-add-lang').innerText = t.btnAddLang;
+
+        document.getElementById('sec-7').innerText = t.sec7;
+        document.getElementById('lbl-other-info').innerText = t.otherInfoLabel;
+        document.getElementById('f_other_info').placeholder = t.phOtherInfo;
+
+        document.getElementById('btn-generate').innerText = t.btnGenerate;
+        document.querySelectorAll('.btn-remove').forEach(el => {
+            if(el.id !== 'btn-clear-data') el.innerText = t.btnRemove;
+        });
+
+        document.getElementById('btn-export-json').innerText = t.btnExport;
+        document.getElementById('btn-import-json').innerText = t.btnImport;
+        document.getElementById('btn-clear-data').innerText = t.btnClear;
+
+        // Edición
+        document.getElementById('txt-edit-title').innerText = t.editTitle;
+        document.getElementById('txt-edit-subtitle').innerHTML = t.editSubtitle;
+        document.getElementById('tb-lbl-text').innerText = t.tbText;
+        document.getElementById('tb-lbl-align').innerText = t.tbAlign;
+        document.getElementById('btn-align-left').innerText = t.alignLeft;
+        document.getElementById('btn-align-center').innerText = t.alignCenter;
+        document.getElementById('btn-align-right').innerText = t.alignRight;
+        document.getElementById('tb-lbl-bg').innerText = t.tbBg;
+        document.getElementById('btn-clear-bg').innerText = t.tbClear;
+        document.getElementById('selection-status').innerText = t.statusSelect;
+        document.getElementById('btn-back').innerText = t.btnBack;
+        document.getElementById('btn-dl-pdf').innerText = t.btnDlPdf;
+        document.getElementById('btn-dl-doc').innerText = t.btnDlDoc;
+        document.getElementById('btn-dl-odt').innerText = t.btnDlOdt;
+    }
+
+    // --- FOTO I ELIMINACIÓ DE FOTO ---
+    const dropZone = document.getElementById("drop-zone");
+    const photoInput = document.getElementById("photo-upload");
+    
+    dropZone.addEventListener("click", (e) => {
+        if(e.target.id === 'btn-remove-photo-text' || e.target.classList.contains('btn-remove-photo')) return;
+        photoInput.click();
+    });
+
+    photoInput.addEventListener("change", (e) => { if (photoInput.files.length) updateThumbnail(photoInput.files[0]); });
+    dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.classList.add("drop-zone--over"); });
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drop-zone--over"));
+    dropZone.addEventListener("drop", (e) => {
+        e.preventDefault(); dropZone.classList.remove("drop-zone--over");
+        if (e.dataTransfer.files.length) { updateThumbnail(e.dataTransfer.files[0]); }
+    });
+
+    function updateThumbnail(file) {
+        if (!file.type.startsWith("image/")) return;
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+            photoBase64 = reader.result;
+            renderThumbnail();
+            autoSave();
+        };
+    }
+    
+    function renderThumbnail() {
+        const t = translations[currentLang];
+        let prompt = dropZone.querySelector(".drop-zone__prompt");
+        if(prompt) prompt.style.display = 'none';
+        
+        let thumb = dropZone.querySelector(".drop-zone__thumb");
+        if (!thumb) {
+            thumb = document.createElement("div");
+            thumb.classList.add("drop-zone__thumb");
+            dropZone.appendChild(thumb);
+        }
+        thumb.style.backgroundImage = `url('${photoBase64}')`;
+        
+        if (!thumb.querySelector('.btn-remove-photo')) {
+            const btnRemove = document.createElement("button");
+            btnRemove.type = "button";
+            btnRemove.className = "btn-remove-photo";
+            btnRemove.innerHTML = `<span id="btn-remove-photo-text">${t.removePhoto}</span>`;
+            btnRemove.onclick = (e) => {
+                e.stopPropagation();
+                removePhoto();
+            };
+            thumb.appendChild(btnRemove);
+        }
+    }
+
+    function removePhoto() {
+        photoBase64 = "";
+        photoInput.value = "";
+        const thumb = dropZone.querySelector(".drop-zone__thumb");
+        if (thumb) thumb.remove();
+        
+        const t = translations[currentLang];
+        let prompt = dropZone.querySelector(".drop-zone__prompt");
+        if (!prompt) {
+            prompt = document.createElement("span");
+            prompt.className = "drop-zone__prompt";
+            prompt.id = "txt-drop-prompt";
+            prompt.innerText = t.dropPrompt;
+            dropZone.appendChild(prompt);
+        } else {
+            prompt.style.display = 'block';
+        }
+        autoSave();
+    }
+
+    // --- LÓGICA DINÁMICA ---
+    function addExperience(data = {}) {
+        const t = translations[currentLang];
+        const container = document.getElementById('experience-container');
+        const block = document.createElement('div');
+        block.className = 'dynamic-block exp-block';
+        block.innerHTML = `
+            <button type="button" class="btn-remove" onclick="this.parentElement.remove(); autoSave();">${t.btnRemove}</button>
+            <div class="form-group"><label class="lbl-exp-role">${t.expRole}</label><input type="text" class="exp-title" placeholder="${t.phExpTitle}" value="${data.title || ''}"></div>
+            <div style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex: 2;"><label class="lbl-exp-company">${t.expCompany}</label><input type="text" class="exp-company" placeholder="${t.phExpCompany}" value="${data.company || ''}"></div>
+                <div class="form-group" style="flex: 1;"><label class="lbl-exp-dates">${t.expDates}</label><input type="text" class="exp-date" placeholder="${t.phExpDate}" value="${data.date || ''}"></div>
+            </div>
+            <div class="form-group"><label class="lbl-exp-desc">${t.expDesc}</label><textarea class="exp-desc" placeholder="${t.phExpDesc}">${data.desc || ''}</textarea></div>
+        `;
+        container.appendChild(block);
+        attachAutoSave(block);
+    }
+
+    function addEducation(data = {}) {
+        const t = translations[currentLang];
+        const container = document.getElementById('education-container');
+        const block = document.createElement('div');
+        block.className = 'dynamic-block edu-block';
+        block.innerHTML = `
+            <button type="button" class="btn-remove" onclick="this.parentElement.remove(); autoSave();">${t.btnRemove}</button>
+            <div class="form-group"><label class="lbl-edu-degree">${t.eduDegree}</label><input type="text" class="edu-title" placeholder="${t.phEduTitle}" value="${data.title || ''}"></div>
+            <div style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex: 2;"><label class="lbl-edu-school">${t.eduSchool}</label><input type="text" class="edu-school" placeholder="${t.phEduSchool}" value="${data.school || ''}"></div>
+                <div class="form-group" style="flex: 1;"><label class="lbl-edu-date">${t.eduDate}</label><input type="text" class="edu-date" placeholder="${t.phEduDate}" value="${data.date || ''}"></div>
+            </div>
+        `;
+        container.appendChild(block);
+        attachAutoSave(block);
+    }
+
+    function addComplementary(data = {}) {
+        const t = translations[currentLang];
+        const container = document.getElementById('complementary-container');
+        const block = document.createElement('div');
+        block.className = 'dynamic-block comp-block';
+        block.innerHTML = `
+            <button type="button" class="btn-remove" onclick="this.parentElement.remove(); autoSave();">${t.btnRemove}</button>
+            <div class="form-group"><label class="lbl-comp-course">${t.compCourse}</label><input type="text" class="comp-title" placeholder="${t.phCompCourse}" value="${data.title || ''}"></div>
+            <div style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex: 2;"><label class="lbl-comp-school">${t.compSchool}</label><input type="text" class="comp-school" placeholder="${t.phCompSchool}" value="${data.school || ''}"></div>
+                <div class="form-group" style="flex: 1;"><label class="lbl-comp-date">${t.compDate}</label><input type="text" class="comp-date" placeholder="${t.phCompDate}" value="${data.date || ''}"></div>
+            </div>
+            <div class="form-group" style="max-width: 200px;"><label class="lbl-comp-hours">${t.compHours}</label><input type="text" class="comp-hours" placeholder="${t.phCompHours}" value="${data.hours || ''}"></div>
+        `;
+        container.appendChild(block);
+        attachAutoSave(block);
+    }
+
+    function addLanguage(data = {}) {
+        const t = translations[currentLang];
+        const container = document.getElementById('languages-container');
+        const block = document.createElement('div');
+        block.className = 'dynamic-block lang-block';
+        const isCert = data.cert ? 'checked' : '';
+        const displayCert = data.cert ? 'block' : 'none';
+        block.innerHTML = `
+            <button type="button" class="btn-remove" onclick="this.parentElement.remove(); autoSave();">${t.btnRemove}</button>
+            <div style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex: 2;"><label class="lbl-lang-name">${t.langName}</label><input type="text" class="lang-name" placeholder="${t.phLangName}" value="${data.name || ''}"></div>
+                <div class="form-group" style="flex: 1;"><label class="lbl-lang-level">${t.langLevel}</label>
+                    <select class="lang-level">
+                        <option value="Básico" class="opt-basic" ${data.lvl==='Básico'?'selected':''}>${t.optBasic}</option>
+                        <option value="Intermedio" class="opt-inter" ${data.lvl==='Intermedio'?'selected':''}>${t.optInter}</option>
+                        <option value="Avanzado" class="opt-adv" ${data.lvl==='Avanzado'?'selected':''}>${t.optAdv}</option>
+                        <option value="Nativo" class="opt-native" ${data.lvl==='Nativo'?'selected':''}>${t.optNative}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group"><label style="font-weight: normal; cursor: pointer;"><input type="checkbox" class="check-titulo" onchange="toggleTitulo(this); autoSave();" ${isCert}> <span class="txt-cert-question">${t.certQuestion}</span></label></div>
+            <div class="campo-titulo-container" style="display: ${displayCert};"><label class="lbl-cert-spec">${t.certSpec}</label><input type="text" class="lang-cert" placeholder="${t.phLangCert}" value="${data.certName || ''}"></div>
+        `;
+        container.appendChild(block);
+        attachAutoSave(block);
+    }
+
+    function toggleTitulo(checkbox) {
+        const container = checkbox.closest('.lang-block').querySelector('.campo-titulo-container');
+        container.style.display = checkbox.checked ? 'block' : 'none';
+        if (!checkbox.checked) container.querySelector('.lang-cert').value = '';
+    }
+
+    // --- PERSISTÈNCIA (LocalStorage & JSON) ---
+    function gatherFormData() {
+        const data = {
+            lang: document.getElementById('app-lang').value, photo: photoBase64,
+            name: document.getElementById('f_name').value, email: document.getElementById('f_email').value, phone: document.getElementById('f_phone').value,
+            location: document.getElementById('f_location').value, summary: document.getElementById('f_summary').value,
+            skillsP: document.getElementById('f_skills_personal').value, skillsT: document.getElementById('f_skills_technical').value,
+            other: document.getElementById('f_other_info').value, exp: [], edu: [], comp: [], langList: []
+        };
+        document.querySelectorAll('.exp-block').forEach(b => data.exp.push({ title: b.querySelector('.exp-title').value, company: b.querySelector('.exp-company').value, date: b.querySelector('.exp-date').value, desc: b.querySelector('.exp-desc').value }));
+        document.querySelectorAll('.edu-block').forEach(b => data.edu.push({ title: b.querySelector('.edu-title').value, school: b.querySelector('.edu-school').value, date: b.querySelector('.edu-date').value }));
+        document.querySelectorAll('.comp-block').forEach(b => data.comp.push({ title: b.querySelector('.comp-title').value, school: b.querySelector('.comp-school').value, date: b.querySelector('.comp-date').value, hours: b.querySelector('.comp-hours').value }));
+        document.querySelectorAll('.lang-block').forEach(b => data.langList.push({ name: b.querySelector('.lang-name').value, lvl: b.querySelector('.lang-level').value, cert: b.querySelector('.check-titulo').checked, certName: b.querySelector('.lang-cert').value }));
+        return data;
+    }
+
+    function autoSave() { localStorage.setItem('cv_builder_data', JSON.stringify(gatherFormData())); }
+    
+    function attachAutoSave(element = document) { element.querySelectorAll('input, textarea, select').forEach(el => el.addEventListener('input', autoSave)); }
+
+    function populateForm(data) {
+        if(!data) return;
+        document.getElementById('app-lang').value = data.lang || 'es'; 
+        if (data.photo) { photoBase64 = data.photo; renderThumbnail(); } else { removePhoto(); }
+        document.getElementById('f_name').value = data.name || ''; document.getElementById('f_email').value = data.email || '';
+        document.getElementById('f_phone').value = data.phone || ''; document.getElementById('f_location').value = data.location || '';
+        document.getElementById('f_summary').value = data.summary || ''; document.getElementById('f_skills_personal').value = data.skillsP || '';
+        document.getElementById('f_skills_technical').value = data.skillsT || ''; document.getElementById('f_other_info').value = data.other || '';
+        
+        document.getElementById('experience-container').innerHTML = ''; (data.exp || []).forEach(e => addExperience(e));
+        document.getElementById('education-container').innerHTML = ''; (data.edu || []).forEach(e => addEducation(e));
+        document.getElementById('complementary-container').innerHTML = ''; (data.comp || []).forEach(e => addComplementary(e));
+        document.getElementById('languages-container').innerHTML = ''; (data.langList || []).forEach(e => addLanguage(e));
+        
+        if(data.exp?.length === 0) addExperience(); 
+        if(data.edu?.length === 0) addEducation(); 
+        if(data.comp?.length === 0) addComplementary(); 
+        if(data.langList?.length === 0) addLanguage();
+        
+        changeLanguage(data.lang || 'es');
+    }
+
+    function loadFromLocalStorage() {
+        const stored = localStorage.getItem('cv_builder_data');
+        if (stored) populateForm(JSON.parse(stored));
+        else { addExperience(); addEducation(); addComplementary(); addLanguage(); changeLanguage('es'); }
+        attachAutoSave();
+    }
+    window.onload = loadFromLocalStorage;
+
+    function exportJSON() {
+        const blob = new Blob([JSON.stringify(gatherFormData(), null, 2)], { type: 'application/json' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'curriculum_backup.json'; a.click();
+    }
+    
+    function importJSON(event) {
+        const file = event.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = e => { populateForm(JSON.parse(e.target.result)); autoSave(); };
+        reader.readAsText(file);
+    }
+    
+    function clearData() { 
+        const msg = currentLang === 'ca' ? "¿Segur que vols esborrar totes les dades?" : "¿Seguro que quieres borrar todos los datos?";
+        if(confirm(msg)) { localStorage.removeItem('cv_builder_data'); location.reload(); } 
+    }
+
+    // --- GENERACIÓ CV (Columna Única) ---
+    function getBlockControlsHtml() { 
+        return `<div class="block-controls non-exportable"><button class="drag-handle" title="Arrastrar" style="cursor: grab;">≡ Arrossegar / Moure</button></div>`; 
+    }
+    function wrapInTable(content) { return `<table width="100%" cellpadding="15" cellspacing="0" border="0" style="margin-bottom: 15px; border-collapse: collapse;"><tr><td class="bg-cell" valign="top" style="border-radius: 6px;">${content}</td></tr></table>`; }
+
+    function generatePreview() {
+        const d = gatherFormData(); const t = translations[currentLang];
+        
+        let headerContent = `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="padding-bottom: 20px;"><tr>`;
+        if (d.photo) headerContent += `<td width="120" valign="top"><img src="${d.photo}" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;"></td>`;
+        
+        const defaultName = currentLang === 'ca' ? 'El teu nom' : 'Tu Nombre';
+        headerContent += `<td valign="top" align="${d.photo?'left':'center'}" style="padding-left: ${d.photo?'20px':'0'};">
+            <div class="editable" style="color: #2c3e50; font-size: 32px; font-weight: bold; margin-bottom: 8px;">${d.name||defaultName}</div>
+            ${d.email ? `<div class="editable" style="color: #555; font-size: 14px; margin-bottom: 4px;">${d.email}</div>`:''}
+            ${d.phone ? `<div class="editable" style="color: #555; font-size: 14px; margin-bottom: 4px;">${d.phone}</div>`:''}
+            ${d.location ? `<div class="editable" style="color: #555; font-size: 14px;">${d.location}</div>`:''}
+        </td></tr></table>`;
+        
+        let htmlContent = `<div class="block-editable header-block" draggable="true">${getBlockControlsHtml()}${wrapInTable(headerContent)}</div>`;
+
+        const addSection = (title, content) => { 
+            if(content) { 
+                htmlContent += `<div class="block-editable" draggable="true" style="margin-bottom: 20px;">${getBlockControlsHtml()}${wrapInTable(`<div class="editable" style="color: #2c3e50; font-size: 18px; text-transform: uppercase; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-bottom: 10px; font-weight:bold;">${title}</div>${content}`)}</div>`; 
+            } 
+        };
+
+        let profContent = d.summary.trim() ? `<div class="editable" style="color: #000; font-size: 14px; line-height: 1.6;">${d.summary.replace(/\n/g, '<br>')}</div>` : '';
+        addSection(t.cvProfile, profContent);
+        
+        let expHtml = d.exp.filter(e=>e.title||e.company).map(e=>`<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 5px;"><tr><td align="left" width="70%"><div class="editable" style="font-size: 16px; font-weight: bold;">${e.title}</div></td><td align="right" width="30%"><div class="editable" style="color: #666; font-size: 13px; font-style: italic;">${e.date}</div></td></tr></table><div class="editable" style="color: #444; font-size: 14px; font-weight: 600; margin-bottom: 5px;">${e.company}</div>${e.desc?`<div class="editable" style="font-size: 14px; line-height: 1.6;">${e.desc.replace(/\n/g, '<br>')}</div>`:''}`).join('<br>');
+        addSection(t.cvExp, expHtml);
+        
+        let eduHtml = d.edu.filter(e=>e.title||e.school).map(e=>`<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 5px;"><tr><td align="left" width="70%"><div class="editable" style="font-size: 16px; font-weight: bold;">${e.title}</div></td><td align="right" width="30%"><div class="editable" style="color: #666; font-size: 13px; font-style: italic;">${e.date}</div></td></tr></table><div class="editable" style="color: #444; font-size: 14px;">${e.school}</div>`).join('<br>');
+        addSection(t.cvEdu, eduHtml);
+
+        let compHtml = d.comp.filter(e=>e.title||e.school).map(e=>{
+            let hoursText = e.hours ? ` (${e.hours})` : '';
+            return `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 5px;"><tr><td align="left" width="70%"><div class="editable" style="font-size: 16px; font-weight: bold;">${e.title}${hoursText}</div></td><td align="right" width="30%"><div class="editable" style="color: #666; font-size: 13px; font-style: italic;">${e.date}</div></td></tr></table><div class="editable" style="color: #444; font-size: 14px;">${e.school}</div>`;
+        }).join('<br>');
+        addSection(t.cvComp, compHtml);
+
+        let skillsHtml = '';
+        if (d.skillsP) {
+            skillsHtml += `<div class="editable" style="color: #34495e; font-size: 15px; font-weight: bold; margin-bottom: 5px;">${t.cvPersonalSkills}</div>`;
+            skillsHtml += `<ul style="margin: 0 0 10px 0; padding-left: 20px;">${d.skillsP.split(',').map(s=>`<li class="editable" style="font-size: 14px;">${s.trim()}</li>`).join('')}</ul>`;
+        }
+        if (d.skillsT) {
+            skillsHtml += `<div class="editable" style="color: #34495e; font-size: 15px; font-weight: bold; margin-bottom: 5px;">${t.cvTechnicalSkills}</div>`;
+            skillsHtml += `<ul style="margin: 0 0 10px 0; padding-left: 20px;">${d.skillsT.split(',').map(s=>`<li class="editable" style="font-size: 14px;">${s.trim()}</li>`).join('')}</ul>`;
+        }
+        addSection(t.cvSkills, skillsHtml);
+
+        let langHtml = d.langList.filter(l=>l.name).map(l=>{
+            let lvlText = l.lvl;
+            if(currentLang === 'ca') {
+                if(l.lvl === 'Básico') lvlText = 'Bàsic';
+                else if (l.lvl === 'Intermedio') lvlText = 'Intermedi';
+                else if (l.lvl === 'Avanzado') lvlText = 'Avançat';
+                else if (l.lvl === 'Nativo') lvlText = 'Natiu';
+            }
+            return `<div style="margin-bottom: 5px;"><span class="editable" style="font-size: 14px; font-weight: bold; display: inline;">${l.name}: </span><span class="editable" style="color: #555; font-size: 14px; display: inline;">${lvlText}${l.cert?` (${l.certName})`:''}</span></div>`;
+        }).join('');
+        addSection(t.cvLang, langHtml);
+
+        let otherContent = d.other.trim() ? `<div class="editable" style="font-size: 14px; line-height: 1.6;">${d.other.replace(/\n/g, '<br>')}</div>` : '';
+        addSection(t.cvOther, otherContent);
+
+        document.getElementById('resume-content').innerHTML = htmlContent;
+
+        document.getElementById('form-section').style.display = 'none';
+        document.getElementById('preview-section').style.display = 'block';
+        window.scrollTo(0, 0);
+        initEditor(); initNativeDragAndDrop();
+    }
+
+    function editForm() { 
+        document.getElementById('preview-section').style.display = 'none'; 
+        document.getElementById('form-section').style.display = 'block'; 
+        window.scrollTo(0, 0);
+    }
+
+    // --- DRAG AND DROP NATIU ---
+    function initNativeDragAndDrop() {
+        let draggedItem = null;
+
+        document.querySelectorAll('.block-editable').forEach(item => {
+            const handle = item.querySelector('.block-controls');
+            if (handle) {
+                handle.addEventListener('mousedown', () => {
+                    item.setAttribute('draggable', 'true');
+                });
+            }
+
+            item.addEventListener('dragstart', function(e) {
+                draggedItem = this;
+                e.dataTransfer.effectAllowed = 'move';
+                setTimeout(() => this.classList.add('dragging'), 0);
+            });
+
+            item.addEventListener('dragend', function() {
+                this.classList.remove('dragging');
+                draggedItem = null;
+                document.querySelectorAll('.block-editable, .sort-container').forEach(el => {
+                    el.classList.remove('drag-over');
+                });
+            });
+
+            item.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (this === draggedItem) return;
+                this.classList.add('drag-over');
+            });
+
+            item.addEventListener('dragleave', function() {
+                this.classList.remove('drag-over');
+            });
+
+            item.addEventListener('drop', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.remove('drag-over');
+
+                if (draggedItem && this !== draggedItem) {
+                    const bounding = this.getBoundingClientRect();
+                    const offset = bounding.y + (bounding.height / 2);
+                    if (e.clientY - offset > 0) {
+                        this.after(draggedItem);
+                    } else {
+                        this.before(draggedItem);
+                    }
+                }
+            });
+        });
+
+        const container = document.querySelector('.sort-container');
+        if (container) {
+            container.addEventListener('dragover', function(e) {
+                e.preventDefault();
+            });
+            container.addEventListener('drop', function(e) {
+                e.preventDefault();
+                if (draggedItem) {
+                    this.appendChild(draggedItem);
+                }
+            });
+        }
+    }
+
+    // --- EDITOR VISUAL ---
+    let selText = null, selBlock = null;
+    function initEditor() {
+        document.addEventListener('click', e => { if (!e.target.closest('#resume-content') && !e.target.closest('.editor-toolbar')) clearSelection(); });
+        document.querySelectorAll('.block-editable').forEach(b => {
+            b.addEventListener('click', function(e) {
+                if (e.target.closest('.editable') || e.target.closest('button')) return;
+                clearSelection(); selBlock = this; this.classList.add('selected-block');
+                document.querySelectorAll('#bg-color-picker, #btn-clear-bg').forEach(btn => btn.disabled = false);
+                const bg = this.querySelector('.bg-cell')?.getAttribute('bgcolor') || '#ffffff';
+                document.getElementById('bg-color-picker').value = bg === 'transparent' ? '#ffffff' : bg;
+            });
+        });
+        document.querySelectorAll('.editable').forEach(el => {
+            el.addEventListener('click', function(e) {
+                e.stopPropagation(); clearSelection(); selText = this; this.classList.add('selected');
+                document.querySelectorAll('#btn-bold, #btn-size-up, #btn-size-down, #text-color-picker, .text-align-btn').forEach(btn => btn.disabled = false);
+                document.getElementById('text-color-picker').value = rgbToHex(window.getComputedStyle(this).color);
+            });
+        });
+    }
+
+    function clearSelection() {
+        if (selText) selText.classList.remove('selected'); selText = null;
+        if (selBlock) selBlock.classList.remove('selected-block'); selBlock = null;
+        document.querySelectorAll('.toolbar-btn, input[type="color"]').forEach(btn => btn.disabled = true);
+    }
+    
+    function changeTextColor(h) { if (selText) selText.style.color = h; }
+    function toggleBold() { if (selText) { const w = window.getComputedStyle(selText).fontWeight; selText.style.fontWeight = (w >= 700 || w === 'bold') ? 'normal' : 'bold'; } }
+    function changeSize(s) { if (selText) { let sz = parseFloat(window.getComputedStyle(selText).fontSize) + (s * 2); if(sz>=10&&sz<=60) selText.style.fontSize = sz + 'px'; } }
+    function alignText(a) { if (selText) { selText.style.textAlign = a; if(window.getComputedStyle(selText).display==='inline') selText.style.display='block'; } }
+    function changeBgColor(h) { if (selBlock) { const c = selBlock.querySelector('.bg-cell'); if(c) { c.setAttribute('bgcolor', h); c.style.backgroundColor = h; } } }
+    function clearBgColor() { if (selBlock) { const c = selBlock.querySelector('.bg-cell'); if(c) { c.removeAttribute('bgcolor'); c.style.backgroundColor = 'transparent'; } } }
+    function rgbToHex(rgb) { let m = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/); if (!m) return "#000000"; return "#" + ("0"+parseInt(m[1]).toString(16)).slice(-2) + ("0"+parseInt(m[2]).toString(16)).slice(-2) + ("0"+parseInt(m[3]).toString(16)).slice(-2); }
+
+    // --- EXPORTAR DOC/ODT ---
+    function downloadFile(format) {
+        clearSelection(); 
+        const clone = document.getElementById('resume-content').cloneNode(true);
+        clone.querySelectorAll('.editable').forEach(el => el.classList.remove('editable', 'selected'));
+        clone.querySelectorAll('.block-editable').forEach(el => el.classList.remove('block-editable', 'selected-block'));
+        clone.querySelectorAll('.non-exportable').forEach(el => el.remove());
+        
+        const html = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><style>body { font-family: 'Helvetica Neue', Arial, sans-serif; }</style></head><body>" + clone.innerHTML + "</body></html>";
+        
+        const blob = new Blob(['\ufeff', html], { type: format==='odt'?'application/vnd.oasis.opendocument.text':'application/msword' });
+        const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `Curriculum_${currentLang.toUpperCase()}.${format}`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    }
+</script>
+
+</body>
+</html>
