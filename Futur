@@ -1,0 +1,11 @@
+## 🔮 Possibles Funcionalitats Futures (Roadmap)
+
+Totes aquestes propostes estan pensades per mantenir la filosofia del projecte: **funcionament 100% fora de línia (offline), sense instal·lacions i dins d'un únic fitxer HTML**.
+
+*   **Múltiples Plantilles (Templates):** Oferir dissenys alternatius (ex. un disseny a 2 columnes) manipulant l'estructura HTML generada mitjançant JavaScript.
+*   **Selector de Tipografies de Sistema:** Un menú desplegable per canviar el tipus de lletra (Arial, Times New Roman, Verdana, Trebuchet MS...) utilitzant exclusivament fonts preinstal·lades als sistemes operatius per no dependre de Google Fonts ni connexions externes.
+*   **Gestió de Múltiples Perfils (CVs):** Ampliar l'ús del `localStorage` per permetre desar més d'un currículum (ex. "Perfil Informàtic", "Perfil Administratiu") i poder canviar entre ells des d'un menú.
+*   **Iconografia Integrada (SVGs Inline):** Incorporar icones (telèfon, correu, ubicació) al disseny inserint el codi SVG directament dins de l'HTML, evitant així carregar llibreries externes (com FontAwesome).
+*   **Seccions i Blocs Personalitzats:** Permetre a l'usuari crear blocs nous des de zero (amb un títol lliure) per afegir seccions que no vinguin per defecte a la plantilla.
+*   **Gràfics Visuals per Habilitats:** Convertir els nivells d'idiomes o habilitats en petites "barres de progrés" o "punts" utilitzant només HTML i CSS, per donar un toc més modern sense necessitar llibreries externes.
+*   **Mode Fosc (Dark Mode):** Un interruptor per enfosquir la interfície de treball de l'aplicació (el formulari) per fer l'edició més còmoda a la vista, canviant només variables de CSS.
