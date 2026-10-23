@@ -25,6 +25,14 @@
         h2.section-title { color: var(--primary); border-bottom: 2px solid #ecf0f1; padding-bottom: 5px; margin-top: 30px; }
         
         .form-group { margin-bottom: 15px; }
+        .flex-row { display: flex; gap: 15px; flex-wrap: wrap; }
+        .flex-row > .form-group { flex: 1; min-width: 200px; }
+
+        @media (max-width: 600px) {
+            .flex-row { flex-direction: column; gap: 0; }
+            .flex-row > .form-group { width: 100%; min-width: 100%; margin-bottom: 15px !important; }
+            .container { padding: 15px; }
+        }
         label { display: block; margin-bottom: 5px; font-weight: bold; color: #34495e; font-size: 14px; }
         input[type="text"], input[type="email"], select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 4px; box-sizing: border-box; font-family: inherit; font-size: 15px; }
         textarea { resize: vertical; height: 100px; }
@@ -122,16 +130,16 @@
                 <input type="file" id="photo-upload" class="drop-zone__input" accept="image/*">
             </div>
         </div>
-        <div class="form-group"><label id="lbl-fullname">Nombre Completo:</label><input type="text" id="f_name" required></div>
-        <div style="display: flex; gap: 15px;">
-            <div class="form-group" style="flex: 1;"><label id="lbl-email">Correo Electrónico:</label><input type="email" id="f_email"></div>
-            <div class="form-group" style="flex: 1;"><label id="lbl-phone">Teléfono:</label><input type="text" id="f_phone"></div>
+        <div class="form-group"><label id="lbl-fullname" for="f_name">Nombre Completo:</label><input type="text" id="f_name" required></div>
+        <div class="flex-row">
+            <div class="form-group"><label id="lbl-email" for="f_email">Correo Electrónico:</label><input type="email" id="f_email"></div>
+            <div class="form-group"><label id="lbl-phone" for="f_phone">Teléfono:</label><input type="text" id="f_phone"></div>
         </div>
-        <div class="form-group"><label id="lbl-location">Ciudad, País / Enlace (LinkedIn, Portfolio):</label><input type="text" id="f_location"></div>
+        <div class="form-group"><label id="lbl-location" for="f_location">Ciudad, País / Enlace (LinkedIn, Portfolio):</label><input type="text" id="f_location"></div>
 
         <h2 class="section-title" id="sec-2">2. Perfil Profesional</h2>
         <div class="form-group">
-            <label id="lbl-summary">Breve resumen sobre ti y tus objetivos:</label>
+            <label id="lbl-summary" for="f_summary">Breve resumen sobre ti y tus objetivos:</label>
             <textarea id="f_summary"></textarea>
         </div>
 
@@ -148,8 +156,8 @@
         <button type="button" class="btn-add" id="btn-add-comp" onclick="addComplementary()">+ Añadir otro curso</button>
 
         <h2 class="section-title" id="sec-5">6. Habilidades y Competencias</h2>
-        <div class="form-group"><label id="lbl-skills-personal">Competencias Personales e Interpersonales (separadas por comas):</label><input type="text" id="f_skills_personal"></div>
-        <div class="form-group"><label id="lbl-skills-technical">Competencias Técnicas y Digitales (separadas por comas):</label><input type="text" id="f_skills_technical"></div>
+        <div class="form-group"><label id="lbl-skills-personal" for="f_skills_personal">Competencias Personales e Interpersonales (separadas por comas):</label><input type="text" id="f_skills_personal"></div>
+        <div class="form-group"><label id="lbl-skills-technical" for="f_skills_technical">Competencias Técnicas y Digitales (separadas por comas):</label><input type="text" id="f_skills_technical"></div>
 
         <h2 class="section-title" id="sec-6">7. Idiomas</h2>
         <div id="languages-container"></div>
@@ -157,7 +165,7 @@
 
         <h2 class="section-title" id="sec-7">8. Otros datos de interés</h2>
         <div class="form-group">
-            <label id="lbl-other-info">Escribe otros datos de interés (carné de conducir, vehículo propio, disponibilidad de viajar, etc.):</label>
+            <label id="lbl-other-info" for="f_other_info">Escribe otros datos de interés (carné de conducir, vehículo propio, disponibilidad de viajar, etc.):</label>
             <textarea id="f_other_info"></textarea>
         </div>
 
@@ -560,10 +568,31 @@
         if (!file.type.startsWith("image/")) return;
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = () => {
-            photoBase64 = reader.result;
-            renderThumbnail();
-            autoSave();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const maxDim = 800; // Resize large images
+                if (width > maxDim || height > maxDim) {
+                    if (width > height) {
+                        height = Math.round((height * maxDim) / width);
+                        width = maxDim;
+                    } else {
+                        width = Math.round((width * maxDim) / height);
+                        height = maxDim;
+                    }
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                photoBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                renderThumbnail();
+                autoSave();
+            };
+            img.src = e.target.result;
         };
     }
     
@@ -615,34 +644,57 @@
 
     // --- LÓGICA DINÁMICA ---
     function addExperience(data = {}) {
+        const id = Date.now() + Math.floor(Math.random() * 1000);
         const t = translations[currentLang];
         const container = document.getElementById('experience-container');
         const block = document.createElement('div');
         block.className = 'dynamic-block exp-block';
         block.innerHTML = `
             <button type="button" class="btn-remove" onclick="this.parentElement.remove(); autoSave();">${t.btnRemove}</button>
-            <div class="form-group"><label class="lbl-exp-role">${t.expRole}</label><input type="text" class="exp-title" placeholder="${t.phExpTitle}" value="${data.title || ''}"></div>
-            <div style="display: flex; gap: 15px;">
-                <div class="form-group" style="flex: 2;"><label class="lbl-exp-company">${t.expCompany}</label><input type="text" class="exp-company" placeholder="${t.phExpCompany}" value="${data.company || ''}"></div>
-                <div class="form-group" style="flex: 1;"><label class="lbl-exp-dates">${t.expDates}</label><input type="text" class="exp-date" placeholder="${t.phExpDate}" value="${data.date || ''}"></div>
+            <div class="form-group">
+                <label class="lbl-exp-role" for="exp-title-${id}">${t.expRole}</label>
+                <input type="text" id="exp-title-${id}" class="exp-title" placeholder="${t.phExpTitle}" value="${data.title || ''}">
             </div>
-            <div class="form-group"><label class="lbl-exp-desc">${t.expDesc}</label><textarea class="exp-desc" placeholder="${t.phExpDesc}">${data.desc || ''}</textarea></div>
+            <div class="flex-row">
+                <div class="form-group" style="flex: 2;">
+                    <label class="lbl-exp-company" for="exp-company-${id}">${t.expCompany}</label>
+                    <input type="text" id="exp-company-${id}" class="exp-company" placeholder="${t.phExpCompany}" value="${data.company || ''}">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label class="lbl-exp-dates" for="exp-date-${id}">${t.expDates}</label>
+                    <input type="text" id="exp-date-${id}" class="exp-date" placeholder="${t.phExpDate}" value="${data.date || ''}">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="lbl-exp-desc" for="exp-desc-${id}">${t.expDesc}</label>
+                <textarea id="exp-desc-${id}" class="exp-desc" placeholder="${t.phExpDesc}">${data.desc || ''}</textarea>
+            </div>
         `;
         container.appendChild(block);
         attachAutoSave(block);
     }
 
     function addEducation(data = {}) {
+        const id = Date.now() + Math.floor(Math.random() * 1000);
         const t = translations[currentLang];
         const container = document.getElementById('education-container');
         const block = document.createElement('div');
         block.className = 'dynamic-block edu-block';
         block.innerHTML = `
             <button type="button" class="btn-remove" onclick="this.parentElement.remove(); autoSave();">${t.btnRemove}</button>
-            <div class="form-group"><label class="lbl-edu-degree">${t.eduDegree}</label><input type="text" class="edu-title" placeholder="${t.phEduTitle}" value="${data.title || ''}"></div>
-            <div style="display: flex; gap: 15px;">
-                <div class="form-group" style="flex: 2;"><label class="lbl-edu-school">${t.eduSchool}</label><input type="text" class="edu-school" placeholder="${t.phEduSchool}" value="${data.school || ''}"></div>
-                <div class="form-group" style="flex: 1;"><label class="lbl-edu-date">${t.eduDate}</label><input type="text" class="edu-date" placeholder="${t.phEduDate}" value="${data.date || ''}"></div>
+            <div class="form-group">
+                <label class="lbl-edu-degree" for="edu-title-${id}">${t.eduDegree}</label>
+                <input type="text" id="edu-title-${id}" class="edu-title" placeholder="${t.phEduTitle}" value="${data.title || ''}">
+            </div>
+            <div class="flex-row">
+                <div class="form-group" style="flex: 2;">
+                    <label class="lbl-edu-school" for="edu-school-${id}">${t.eduSchool}</label>
+                    <input type="text" id="edu-school-${id}" class="edu-school" placeholder="${t.phEduSchool}" value="${data.school || ''}">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label class="lbl-edu-date" for="edu-date-${id}">${t.eduDate}</label>
+                    <input type="text" id="edu-date-${id}" class="edu-date" placeholder="${t.phEduDate}" value="${data.date || ''}">
+                </div>
             </div>
         `;
         container.appendChild(block);
@@ -650,24 +702,38 @@
     }
 
     function addComplementary(data = {}) {
+        const id = Date.now() + Math.floor(Math.random() * 1000);
         const t = translations[currentLang];
         const container = document.getElementById('complementary-container');
         const block = document.createElement('div');
         block.className = 'dynamic-block comp-block';
         block.innerHTML = `
             <button type="button" class="btn-remove" onclick="this.parentElement.remove(); autoSave();">${t.btnRemove}</button>
-            <div class="form-group"><label class="lbl-comp-course">${t.compCourse}</label><input type="text" class="comp-title" placeholder="${t.phCompCourse}" value="${data.title || ''}"></div>
-            <div style="display: flex; gap: 15px;">
-                <div class="form-group" style="flex: 2;"><label class="lbl-comp-school">${t.compSchool}</label><input type="text" class="comp-school" placeholder="${t.phCompSchool}" value="${data.school || ''}"></div>
-                <div class="form-group" style="flex: 1;"><label class="lbl-comp-date">${t.compDate}</label><input type="text" class="comp-date" placeholder="${t.phCompDate}" value="${data.date || ''}"></div>
+            <div class="form-group">
+                <label class="lbl-comp-course" for="comp-title-${id}">${t.compCourse}</label>
+                <input type="text" id="comp-title-${id}" class="comp-title" placeholder="${t.phCompCourse}" value="${data.title || ''}">
             </div>
-            <div class="form-group" style="max-width: 200px;"><label class="lbl-comp-hours">${t.compHours}</label><input type="text" class="comp-hours" placeholder="${t.phCompHours}" value="${data.hours || ''}"></div>
+            <div class="flex-row">
+                <div class="form-group" style="flex: 2;">
+                    <label class="lbl-comp-school" for="comp-school-${id}">${t.compSchool}</label>
+                    <input type="text" id="comp-school-${id}" class="comp-school" placeholder="${t.phCompSchool}" value="${data.school || ''}">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label class="lbl-comp-date" for="comp-date-${id}">${t.compDate}</label>
+                    <input type="text" id="comp-date-${id}" class="comp-date" placeholder="${t.phCompDate}" value="${data.date || ''}">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label class="lbl-comp-hours" for="comp-hours-${id}">${t.compHours}</label>
+                    <input type="text" id="comp-hours-${id}" class="comp-hours" placeholder="${t.phCompHours}" value="${data.hours || ''}">
+                </div>
+            </div>
         `;
         container.appendChild(block);
         attachAutoSave(block);
     }
 
     function addLanguage(data = {}) {
+        const id = Date.now() + Math.floor(Math.random() * 1000);
         const t = translations[currentLang];
         const container = document.getElementById('languages-container');
         const block = document.createElement('div');
@@ -676,10 +742,14 @@
         const displayCert = data.cert ? 'block' : 'none';
         block.innerHTML = `
             <button type="button" class="btn-remove" onclick="this.parentElement.remove(); autoSave();">${t.btnRemove}</button>
-            <div style="display: flex; gap: 15px;">
-                <div class="form-group" style="flex: 2;"><label class="lbl-lang-name">${t.langName}</label><input type="text" class="lang-name" placeholder="${t.phLangName}" value="${data.name || ''}"></div>
-                <div class="form-group" style="flex: 1;"><label class="lbl-lang-level">${t.langLevel}</label>
-                    <select class="lang-level">
+            <div class="flex-row">
+                <div class="form-group" style="flex: 2;">
+                    <label class="lbl-lang-name" for="lang-name-${id}">${t.langName}</label>
+                    <input type="text" id="lang-name-${id}" class="lang-name" placeholder="${t.phLangName}" value="${data.name || ''}">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label class="lbl-lang-level" for="lang-level-${id}">${t.langLevel}</label>
+                    <select id="lang-level-${id}" class="lang-level">
                         <option value="Básico" class="opt-basic" ${data.lvl==='Básico'?'selected':''}>${t.optBasic}</option>
                         <option value="Intermedio" class="opt-inter" ${data.lvl==='Intermedio'?'selected':''}>${t.optInter}</option>
                         <option value="Avanzado" class="opt-adv" ${data.lvl==='Avanzado'?'selected':''}>${t.optAdv}</option>
@@ -687,8 +757,16 @@
                     </select>
                 </div>
             </div>
-            <div class="form-group"><label style="font-weight: normal; cursor: pointer;"><input type="checkbox" class="check-titulo" onchange="toggleTitulo(this); autoSave();" ${isCert}> <span class="txt-cert-question">${t.certQuestion}</span></label></div>
-            <div class="campo-titulo-container" style="display: ${displayCert};"><label class="lbl-cert-spec">${t.certSpec}</label><input type="text" class="lang-cert" placeholder="${t.phLangCert}" value="${data.certName || ''}"></div>
+            <div class="form-group">
+                <label style="font-weight: normal; cursor: pointer;">
+                    <input type="checkbox" class="check-titulo" onchange="toggleTitulo(this); autoSave();" ${isCert}> 
+                    <span class="txt-cert-question">${t.certQuestion}</span>
+                </label>
+            </div>
+            <div class="campo-titulo-container" style="display: ${displayCert};">
+                <label class="lbl-cert-spec" for="lang-cert-${id}">${t.certSpec}</label>
+                <input type="text" id="lang-cert-${id}" class="lang-cert" placeholder="${t.phLangCert}" value="${data.certName || ''}">
+            </div>
         `;
         container.appendChild(block);
         attachAutoSave(block);
@@ -703,36 +781,90 @@
     // --- PERSISTÈNCIA (LocalStorage & JSON) ---
     function gatherFormData() {
         const data = {
-            lang: document.getElementById('app-lang').value, photo: photoBase64,
-            name: document.getElementById('f_name').value, email: document.getElementById('f_email').value, phone: document.getElementById('f_phone').value,
-            location: document.getElementById('f_location').value, summary: document.getElementById('f_summary').value,
-            skillsP: document.getElementById('f_skills_personal').value, skillsT: document.getElementById('f_skills_technical').value,
-            other: document.getElementById('f_other_info').value, exp: [], edu: [], comp: [], langList: []
+            lang: document.getElementById('app-lang').value, 
+            photo: photoBase64,
+            name: document.getElementById('f_name').value, 
+            email: document.getElementById('f_email').value, 
+            phone: document.getElementById('f_phone').value,
+            location: document.getElementById('f_location').value, 
+            summary: document.getElementById('f_summary').value,
+            skillsP: document.getElementById('f_skills_personal').value, 
+            skillsT: document.getElementById('f_skills_technical').value,
+            other: document.getElementById('f_other_info').value, 
+            exp: [], edu: [], comp: [], langList: []
         };
-        document.querySelectorAll('.exp-block').forEach(b => data.exp.push({ title: b.querySelector('.exp-title').value, company: b.querySelector('.exp-company').value, date: b.querySelector('.exp-date').value, desc: b.querySelector('.exp-desc').value }));
-        document.querySelectorAll('.edu-block').forEach(b => data.edu.push({ title: b.querySelector('.edu-title').value, school: b.querySelector('.edu-school').value, date: b.querySelector('.edu-date').value }));
-        document.querySelectorAll('.comp-block').forEach(b => data.comp.push({ title: b.querySelector('.comp-title').value, school: b.querySelector('.comp-school').value, date: b.querySelector('.comp-date').value, hours: b.querySelector('.comp-hours').value }));
-        document.querySelectorAll('.lang-block').forEach(b => data.langList.push({ name: b.querySelector('.lang-name').value, lvl: b.querySelector('.lang-level').value, cert: b.querySelector('.check-titulo').checked, certName: b.querySelector('.lang-cert').value }));
+        
+        document.querySelectorAll('.exp-block').forEach(b => data.exp.push({ 
+            title: b.querySelector('.exp-title').value, 
+            company: b.querySelector('.exp-company').value, 
+            date: b.querySelector('.exp-date').value, 
+            desc: b.querySelector('.exp-desc').value 
+        }));
+        
+        document.querySelectorAll('.edu-block').forEach(b => data.edu.push({ 
+            title: b.querySelector('.edu-title').value, 
+            school: b.querySelector('.edu-school').value, 
+            date: b.querySelector('.edu-date').value 
+        }));
+        
+        document.querySelectorAll('.comp-block').forEach(b => data.comp.push({ 
+            title: b.querySelector('.comp-title').value, 
+            school: b.querySelector('.comp-school').value, 
+            date: b.querySelector('.comp-date').value, 
+            hours: b.querySelector('.comp-hours').value 
+        }));
+        
+        document.querySelectorAll('.lang-block').forEach(b => data.langList.push({ 
+            name: b.querySelector('.lang-name').value, 
+            lvl: b.querySelector('.lang-level').value, 
+            cert: b.querySelector('.check-titulo').checked, 
+            certName: b.querySelector('.lang-cert').value 
+        }));
+        
         return data;
     }
 
-    function autoSave() { localStorage.setItem('cv_builder_data', JSON.stringify(gatherFormData())); }
+    function autoSave() { 
+        localStorage.setItem('cv_builder_data', JSON.stringify(gatherFormData())); 
+    }
     
-    function attachAutoSave(element = document) { element.querySelectorAll('input, textarea, select').forEach(el => el.addEventListener('input', autoSave)); }
+    function attachAutoSave(element = document) { 
+        element.querySelectorAll('input, textarea, select').forEach(el => {
+            el.addEventListener('input', autoSave);
+        }); 
+    }
 
     function populateForm(data) {
         if(!data) return;
-        document.getElementById('app-lang').value = data.lang || 'es'; 
-        if (data.photo) { photoBase64 = data.photo; renderThumbnail(); } else { removePhoto(); }
-        document.getElementById('f_name').value = data.name || ''; document.getElementById('f_email').value = data.email || '';
-        document.getElementById('f_phone').value = data.phone || ''; document.getElementById('f_location').value = data.location || '';
-        document.getElementById('f_summary').value = data.summary || ''; document.getElementById('f_skills_personal').value = data.skillsP || '';
-        document.getElementById('f_skills_technical').value = data.skillsT || ''; document.getElementById('f_other_info').value = data.other || '';
         
-        document.getElementById('experience-container').innerHTML = ''; (data.exp || []).forEach(e => addExperience(e));
-        document.getElementById('education-container').innerHTML = ''; (data.edu || []).forEach(e => addEducation(e));
-        document.getElementById('complementary-container').innerHTML = ''; (data.comp || []).forEach(e => addComplementary(e));
-        document.getElementById('languages-container').innerHTML = ''; (data.langList || []).forEach(e => addLanguage(e));
+        document.getElementById('app-lang').value = data.lang || 'es'; 
+        if (data.photo) { 
+            photoBase64 = data.photo; 
+            renderThumbnail(); 
+        } else { 
+            removePhoto(); 
+        }
+        
+        document.getElementById('f_name').value = data.name || ''; 
+        document.getElementById('f_email').value = data.email || '';
+        document.getElementById('f_phone').value = data.phone || ''; 
+        document.getElementById('f_location').value = data.location || '';
+        document.getElementById('f_summary').value = data.summary || ''; 
+        document.getElementById('f_skills_personal').value = data.skillsP || '';
+        document.getElementById('f_skills_technical').value = data.skillsT || ''; 
+        document.getElementById('f_other_info').value = data.other || '';
+        
+        document.getElementById('experience-container').innerHTML = ''; 
+        (data.exp || []).forEach(e => addExperience(e));
+        
+        document.getElementById('education-container').innerHTML = ''; 
+        (data.edu || []).forEach(e => addEducation(e));
+        
+        document.getElementById('complementary-container').innerHTML = ''; 
+        (data.comp || []).forEach(e => addComplementary(e));
+        
+        document.getElementById('languages-container').innerHTML = ''; 
+        (data.langList || []).forEach(e => addLanguage(e));
         
         if(data.exp?.length === 0) addExperience(); 
         if(data.edu?.length === 0) addEducation(); 
@@ -744,28 +876,48 @@
 
     function loadFromLocalStorage() {
         const stored = localStorage.getItem('cv_builder_data');
-        if (stored) populateForm(JSON.parse(stored));
-        else { addExperience(); addEducation(); addComplementary(); addLanguage(); changeLanguage('es'); }
+        if (stored) {
+            populateForm(JSON.parse(stored));
+        } else { 
+            addExperience(); 
+            addEducation(); 
+            addComplementary(); 
+            addLanguage(); 
+            changeLanguage('es'); 
+        }
         attachAutoSave();
     }
     window.onload = loadFromLocalStorage;
 
     function exportJSON() {
         const blob = new Blob([JSON.stringify(gatherFormData(), null, 2)], { type: 'application/json' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'curriculum_backup.json'; a.click();
+        const a = document.createElement('a'); 
+        a.href = URL.createObjectURL(blob); 
+        a.download = 'curriculum_backup.json'; 
+        a.click();
     }
     
     function importJSON(event) {
         const file = event.target.files[0];
         if(!file) return;
+        
         const reader = new FileReader();
-        reader.onload = e => { populateForm(JSON.parse(e.target.result)); autoSave(); };
+        reader.onload = e => { 
+            populateForm(JSON.parse(e.target.result)); 
+            autoSave(); 
+        };
         reader.readAsText(file);
     }
     
     function clearData() { 
-        const msg = currentLang === 'ca' ? "¿Segur que vols esborrar totes les dades?" : "¿Seguro que quieres borrar todos los datos?";
-        if(confirm(msg)) { localStorage.removeItem('cv_builder_data'); location.reload(); } 
+        const msg = currentLang === 'ca' 
+            ? "¿Segur que vols esborrar totes les dades?" 
+            : "¿Seguro que quieres borrar todos los datos?";
+            
+        if(confirm(msg)) { 
+            localStorage.removeItem('cv_builder_data'); 
+            location.reload(); 
+        } 
     }
 
     // --- GENERACIÓ CV (Columna Única) ---
@@ -773,6 +925,16 @@
         return `<div class="block-controls non-exportable"><button class="drag-handle" title="Arrastrar" style="cursor: grab;">≡ Arrossegar / Moure</button></div>`; 
     }
     function wrapInTable(content) { return `<table width="100%" cellpadding="15" cellspacing="0" border="0" style="margin-bottom: 15px; border-collapse: collapse;"><tr><td class="bg-cell" valign="top" style="border-radius: 6px;">${content}</td></tr></table>`; }
+
+    function escapeHTML(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
 
     function generatePreview() {
         const d = gatherFormData(); const t = translations[currentLang];
@@ -782,43 +944,43 @@
         
         const defaultName = currentLang === 'ca' ? 'El teu nom' : 'Tu Nombre';
         headerContent += `<td valign="top" align="${d.photo?'left':'center'}" style="padding-left: ${d.photo?'20px':'0'};">
-            <div class="editable" style="color: #2c3e50; font-size: 32px; font-weight: bold; margin-bottom: 8px;">${d.name||defaultName}</div>
-            ${d.email ? `<div class="editable" style="color: #555; font-size: 14px; margin-bottom: 4px;">${d.email}</div>`:''}
-            ${d.phone ? `<div class="editable" style="color: #555; font-size: 14px; margin-bottom: 4px;">${d.phone}</div>`:''}
-            ${d.location ? `<div class="editable" style="color: #555; font-size: 14px;">${d.location}</div>`:''}
+            <div class="editable" style="color: #2c3e50; font-size: 32px; font-weight: bold; margin-bottom: 8px;">${escapeHTML(d.name)||escapeHTML(defaultName)}</div>
+            ${d.email ? `<div class="editable" style="color: #555; font-size: 14px; margin-bottom: 4px;">${escapeHTML(d.email)}</div>`:''}
+            ${d.phone ? `<div class="editable" style="color: #555; font-size: 14px; margin-bottom: 4px;">${escapeHTML(d.phone)}</div>`:''}
+            ${d.location ? `<div class="editable" style="color: #555; font-size: 14px;">${escapeHTML(d.location)}</div>`:''}
         </td></tr></table>`;
         
         let htmlContent = `<div class="block-editable header-block" draggable="true">${getBlockControlsHtml()}${wrapInTable(headerContent)}</div>`;
 
         const addSection = (title, content) => { 
             if(content) { 
-                htmlContent += `<div class="block-editable" draggable="true" style="margin-bottom: 20px;">${getBlockControlsHtml()}${wrapInTable(`<div class="editable" style="color: #2c3e50; font-size: 18px; text-transform: uppercase; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-bottom: 10px; font-weight:bold;">${title}</div>${content}`)}</div>`; 
+                htmlContent += `<div class="block-editable" draggable="true" style="margin-bottom: 20px;">${getBlockControlsHtml()}${wrapInTable(`<div class="editable" style="color: #2c3e50; font-size: 18px; text-transform: uppercase; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-bottom: 10px; font-weight:bold;">${escapeHTML(title)}</div>${content}`)}</div>`; 
             } 
         };
 
-        let profContent = d.summary.trim() ? `<div class="editable" style="color: #000; font-size: 14px; line-height: 1.6;">${d.summary.replace(/\n/g, '<br>')}</div>` : '';
+        let profContent = d.summary.trim() ? `<div class="editable" style="color: #000; font-size: 14px; line-height: 1.6;">${escapeHTML(d.summary).replace(/\n/g, '<br>')}</div>` : '';
         addSection(t.cvProfile, profContent);
         
-        let expHtml = d.exp.filter(e=>e.title||e.company).map(e=>`<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 5px;"><tr><td align="left" width="70%"><div class="editable" style="font-size: 16px; font-weight: bold;">${e.title}</div></td><td align="right" width="30%"><div class="editable" style="color: #666; font-size: 13px; font-style: italic;">${e.date}</div></td></tr></table><div class="editable" style="color: #444; font-size: 14px; font-weight: 600; margin-bottom: 5px;">${e.company}</div>${e.desc?`<div class="editable" style="font-size: 14px; line-height: 1.6;">${e.desc.replace(/\n/g, '<br>')}</div>`:''}`).join('<br>');
+        let expHtml = d.exp.filter(e=>e.title||e.company).map(e=>`<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 5px;"><tr><td align="left" width="70%"><div class="editable" style="font-size: 16px; font-weight: bold;">${escapeHTML(e.title)}</div></td><td align="right" width="30%"><div class="editable" style="color: #666; font-size: 13px; font-style: italic;">${escapeHTML(e.date)}</div></td></tr></table><div class="editable" style="color: #444; font-size: 14px; font-weight: 600; margin-bottom: 5px;">${escapeHTML(e.company)}</div>${e.desc?`<div class="editable" style="font-size: 14px; line-height: 1.6;">${escapeHTML(e.desc).replace(/\n/g, '<br>')}</div>`:''}`).join('<br>');
         addSection(t.cvExp, expHtml);
         
-        let eduHtml = d.edu.filter(e=>e.title||e.school).map(e=>`<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 5px;"><tr><td align="left" width="70%"><div class="editable" style="font-size: 16px; font-weight: bold;">${e.title}</div></td><td align="right" width="30%"><div class="editable" style="color: #666; font-size: 13px; font-style: italic;">${e.date}</div></td></tr></table><div class="editable" style="color: #444; font-size: 14px;">${e.school}</div>`).join('<br>');
+        let eduHtml = d.edu.filter(e=>e.title||e.school).map(e=>`<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 5px;"><tr><td align="left" width="70%"><div class="editable" style="font-size: 16px; font-weight: bold;">${escapeHTML(e.title)}</div></td><td align="right" width="30%"><div class="editable" style="color: #666; font-size: 13px; font-style: italic;">${escapeHTML(e.date)}</div></td></tr></table><div class="editable" style="color: #444; font-size: 14px;">${escapeHTML(e.school)}</div>`).join('<br>');
         addSection(t.cvEdu, eduHtml);
 
         let compHtml = d.comp.filter(e=>e.title||e.school).map(e=>{
-            let hoursText = e.hours ? ` (${e.hours})` : '';
-            return `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 5px;"><tr><td align="left" width="70%"><div class="editable" style="font-size: 16px; font-weight: bold;">${e.title}${hoursText}</div></td><td align="right" width="30%"><div class="editable" style="color: #666; font-size: 13px; font-style: italic;">${e.date}</div></td></tr></table><div class="editable" style="color: #444; font-size: 14px;">${e.school}</div>`;
+            let hoursText = e.hours ? ` (${escapeHTML(e.hours)})` : '';
+            return `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 5px;"><tr><td align="left" width="70%"><div class="editable" style="font-size: 16px; font-weight: bold;">${escapeHTML(e.title)}${hoursText}</div></td><td align="right" width="30%"><div class="editable" style="color: #666; font-size: 13px; font-style: italic;">${escapeHTML(e.date)}</div></td></tr></table><div class="editable" style="color: #444; font-size: 14px;">${escapeHTML(e.school)}</div>`;
         }).join('<br>');
         addSection(t.cvComp, compHtml);
 
         let skillsHtml = '';
         if (d.skillsP) {
-            skillsHtml += `<div class="editable" style="color: #34495e; font-size: 15px; font-weight: bold; margin-bottom: 5px;">${t.cvPersonalSkills}</div>`;
-            skillsHtml += `<ul style="margin: 0 0 10px 0; padding-left: 20px;">${d.skillsP.split(',').map(s=>`<li class="editable" style="font-size: 14px;">${s.trim()}</li>`).join('')}</ul>`;
+            skillsHtml += `<div class="editable" style="color: #34495e; font-size: 15px; font-weight: bold; margin-bottom: 5px;">${escapeHTML(t.cvPersonalSkills)}</div>`;
+            skillsHtml += `<ul style="margin: 0 0 10px 0; padding-left: 20px;">${d.skillsP.split(',').map(s=>`<li class="editable" style="font-size: 14px;">${escapeHTML(s.trim())}</li>`).join('')}</ul>`;
         }
         if (d.skillsT) {
-            skillsHtml += `<div class="editable" style="color: #34495e; font-size: 15px; font-weight: bold; margin-bottom: 5px;">${t.cvTechnicalSkills}</div>`;
-            skillsHtml += `<ul style="margin: 0 0 10px 0; padding-left: 20px;">${d.skillsT.split(',').map(s=>`<li class="editable" style="font-size: 14px;">${s.trim()}</li>`).join('')}</ul>`;
+            skillsHtml += `<div class="editable" style="color: #34495e; font-size: 15px; font-weight: bold; margin-bottom: 5px;">${escapeHTML(t.cvTechnicalSkills)}</div>`;
+            skillsHtml += `<ul style="margin: 0 0 10px 0; padding-left: 20px;">${d.skillsT.split(',').map(s=>`<li class="editable" style="font-size: 14px;">${escapeHTML(s.trim())}</li>`).join('')}</ul>`;
         }
         addSection(t.cvSkills, skillsHtml);
 
@@ -830,11 +992,11 @@
                 else if (l.lvl === 'Avanzado') lvlText = 'Avançat';
                 else if (l.lvl === 'Nativo') lvlText = 'Natiu';
             }
-            return `<div style="margin-bottom: 5px;"><span class="editable" style="font-size: 14px; font-weight: bold; display: inline;">${l.name}: </span><span class="editable" style="color: #555; font-size: 14px; display: inline;">${lvlText}${l.cert?` (${l.certName})`:''}</span></div>`;
+            return `<div style="margin-bottom: 5px;"><span class="editable" style="font-size: 14px; font-weight: bold; display: inline;">${escapeHTML(l.name)}: </span><span class="editable" style="color: #555; font-size: 14px; display: inline;">${escapeHTML(lvlText)}${l.cert?` (${escapeHTML(l.certName)})`:''}</span></div>`;
         }).join('');
         addSection(t.cvLang, langHtml);
 
-        let otherContent = d.other.trim() ? `<div class="editable" style="font-size: 14px; line-height: 1.6;">${d.other.replace(/\n/g, '<br>')}</div>` : '';
+        let otherContent = d.other.trim() ? `<div class="editable" style="font-size: 14px; line-height: 1.6;">${escapeHTML(d.other).replace(/\n/g, '<br>')}</div>` : '';
         addSection(t.cvOther, otherContent);
 
         document.getElementById('resume-content').innerHTML = htmlContent;
@@ -921,20 +1083,35 @@
 
     // --- EDITOR VISUAL ---
     let selText = null, selBlock = null;
+    
     function initEditor() {
-        document.addEventListener('click', e => { if (!e.target.closest('#resume-content') && !e.target.closest('.editor-toolbar')) clearSelection(); });
+        document.addEventListener('click', e => { 
+            if (!e.target.closest('#resume-content') && !e.target.closest('.editor-toolbar')) {
+                clearSelection(); 
+            }
+        });
+        
         document.querySelectorAll('.block-editable').forEach(b => {
             b.addEventListener('click', function(e) {
                 if (e.target.closest('.editable') || e.target.closest('button')) return;
-                clearSelection(); selBlock = this; this.classList.add('selected-block');
+                
+                clearSelection(); 
+                selBlock = this; 
+                this.classList.add('selected-block');
                 document.querySelectorAll('#bg-color-picker, #btn-clear-bg').forEach(btn => btn.disabled = false);
+                
                 const bg = this.querySelector('.bg-cell')?.getAttribute('bgcolor') || '#ffffff';
                 document.getElementById('bg-color-picker').value = bg === 'transparent' ? '#ffffff' : bg;
             });
         });
+        
         document.querySelectorAll('.editable').forEach(el => {
             el.addEventListener('click', function(e) {
-                e.stopPropagation(); clearSelection(); selText = this; this.classList.add('selected');
+                e.stopPropagation(); 
+                clearSelection(); 
+                selText = this; 
+                this.classList.add('selected');
+                
                 document.querySelectorAll('#btn-bold, #btn-size-up, #btn-size-down, #text-color-picker, .text-align-btn').forEach(btn => btn.disabled = false);
                 document.getElementById('text-color-picker').value = rgbToHex(window.getComputedStyle(this).color);
             });
@@ -942,32 +1119,93 @@
     }
 
     function clearSelection() {
-        if (selText) selText.classList.remove('selected'); selText = null;
-        if (selBlock) selBlock.classList.remove('selected-block'); selBlock = null;
+        if (selText) selText.classList.remove('selected');
+        selText = null;
+        if (selBlock) selBlock.classList.remove('selected-block');
+        selBlock = null;
         document.querySelectorAll('.toolbar-btn, input[type="color"]').forEach(btn => btn.disabled = true);
     }
     
-    function changeTextColor(h) { if (selText) selText.style.color = h; }
-    function toggleBold() { if (selText) { const w = window.getComputedStyle(selText).fontWeight; selText.style.fontWeight = (w >= 700 || w === 'bold') ? 'normal' : 'bold'; } }
-    function changeSize(s) { if (selText) { let sz = parseFloat(window.getComputedStyle(selText).fontSize) + (s * 2); if(sz>=10&&sz<=60) selText.style.fontSize = sz + 'px'; } }
-    function alignText(a) { if (selText) { selText.style.textAlign = a; if(window.getComputedStyle(selText).display==='inline') selText.style.display='block'; } }
-    function changeBgColor(h) { if (selBlock) { const c = selBlock.querySelector('.bg-cell'); if(c) { c.setAttribute('bgcolor', h); c.style.backgroundColor = h; } } }
-    function clearBgColor() { if (selBlock) { const c = selBlock.querySelector('.bg-cell'); if(c) { c.removeAttribute('bgcolor'); c.style.backgroundColor = 'transparent'; } } }
-    function rgbToHex(rgb) { let m = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/); if (!m) return "#000000"; return "#" + ("0"+parseInt(m[1]).toString(16)).slice(-2) + ("0"+parseInt(m[2]).toString(16)).slice(-2) + ("0"+parseInt(m[3]).toString(16)).slice(-2); }
+    function changeTextColor(h) { 
+        if (selText) selText.style.color = h; 
+    }
+    
+    function toggleBold() { 
+        if (selText) { 
+            const w = window.getComputedStyle(selText).fontWeight; 
+            selText.style.fontWeight = (w >= 700 || w === 'bold') ? 'normal' : 'bold'; 
+        } 
+    }
+    
+    function changeSize(s) { 
+        if (selText) { 
+            let sz = parseFloat(window.getComputedStyle(selText).fontSize) + (s * 2); 
+            if(sz >= 10 && sz <= 60) selText.style.fontSize = sz + 'px'; 
+        } 
+    }
+    
+    function alignText(a) { 
+        if (selText) { 
+            selText.style.textAlign = a; 
+            if(window.getComputedStyle(selText).display === 'inline') {
+                selText.style.display = 'block'; 
+            }
+        } 
+    }
+    
+    function changeBgColor(h) { 
+        if (selBlock) { 
+            const c = selBlock.querySelector('.bg-cell'); 
+            if(c) { 
+                c.setAttribute('bgcolor', h); 
+                c.style.backgroundColor = h; 
+            } 
+        } 
+    }
+    
+    function clearBgColor() { 
+        if (selBlock) { 
+            const c = selBlock.querySelector('.bg-cell'); 
+            if(c) { 
+                c.removeAttribute('bgcolor'); 
+                c.style.backgroundColor = 'transparent'; 
+            } 
+        } 
+    }
+    
+    function rgbToHex(rgb) { 
+        let m = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/); 
+        if (!m) return "#000000"; 
+        return "#" + 
+            ("0" + parseInt(m[1]).toString(16)).slice(-2) + 
+            ("0" + parseInt(m[2]).toString(16)).slice(-2) + 
+            ("0" + parseInt(m[3]).toString(16)).slice(-2); 
+    }
 
     // --- EXPORTAR DOC/ODT ---
     function downloadFile(format) {
         clearSelection(); 
+        
         const clone = document.getElementById('resume-content').cloneNode(true);
         clone.querySelectorAll('.editable').forEach(el => el.classList.remove('editable', 'selected'));
         clone.querySelectorAll('.block-editable').forEach(el => el.classList.remove('block-editable', 'selected-block'));
         clone.querySelectorAll('.non-exportable').forEach(el => el.remove());
         
-        const html = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><style>body { font-family: 'Helvetica Neue', Arial, sans-serif; }</style></head><body>" + clone.innerHTML + "</body></html>";
+        const html = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>" +
+            "<head><meta charset='utf-8'><style>body { font-family: 'Helvetica Neue', Arial, sans-serif; }</style></head>" +
+            "<body>" + clone.innerHTML + "</body></html>";
         
-        const blob = new Blob(['\ufeff', html], { type: format==='odt'?'application/vnd.oasis.opendocument.text':'application/msword' });
-        const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `Curriculum_${currentLang.toUpperCase()}.${format}`;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        const blob = new Blob(['\ufeff', html], { 
+            type: format === 'odt' ? 'application/vnd.oasis.opendocument.text' : 'application/msword' 
+        });
+        
+        const a = document.createElement("a"); 
+        a.href = URL.createObjectURL(blob); 
+        a.download = `Curriculum_${currentLang.toUpperCase()}.${format}`;
+        
+        document.body.appendChild(a); 
+        a.click(); 
+        document.body.removeChild(a);
     }
 </script>
 
